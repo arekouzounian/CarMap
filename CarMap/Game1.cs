@@ -19,6 +19,15 @@ namespace CarMap
         GraphicsDeviceManager graphics;
         SpriteBatch spriteBatch;
         Grid grd;
+        Button switchStates;
+        SpriteFont gameLabel;
+        GameState _gameState;
+
+        private enum GameState
+        {
+            InGame,
+            Editor
+        }
 
         public Dictionary<char, Texture2D> textures
         {
@@ -52,7 +61,11 @@ namespace CarMap
         protected override void Initialize()
         {
             // TODO: Add your initialization logic here
-
+            grd = new Grid(@"C:\Users\agouz\Desktop\path.txt", textures);
+            switchStates = new Button(new Rectangle(new Point(10, 10), new Point(100, 40)),
+                Content.Load<Texture2D>("button1"), Content.Load<Texture2D>("button1"),
+                    Content.Load<Texture2D>("button1-click"));
+            _gameState = GameState.InGame;
             base.Initialize();
         }
 
@@ -64,9 +77,7 @@ namespace CarMap
         {
             // Create a new SpriteBatch, which can be used to draw textures.
             spriteBatch = new SpriteBatch(GraphicsDevice);
-            
-            
-            grd = new Grid(@"C:\Users\agouz\Desktop\path.txt", textures); 
+            gameLabel = Content.Load<SpriteFont>("text-label");
             // TODO: use this.Content to load your game content here
         }
 
@@ -88,9 +99,12 @@ namespace CarMap
         {
             if (GamePad.GetState(PlayerIndex.One).Buttons.Back == ButtonState.Pressed || Keyboard.GetState().IsKeyDown(Keys.Escape))
                 Exit();
-
             // TODO: Add your update logic here
-
+            switchStates.Update(Mouse.GetState());
+            if(switchStates.buttonState == Button.State.Released)
+            {
+                reverseGameState();
+            }
             base.Update(gameTime);
         }
 
@@ -102,19 +116,52 @@ namespace CarMap
         {
             GraphicsDevice.Clear(Color.AntiqueWhite);
             int cellSize = 30;
+            var gC = gridPos(cellSize);
 
             // TODO: Add your drawing code here
             spriteBatch.Begin();
-
-            grd.drawMap(spriteBatch,
-                new Vector2((GraphicsDevice.Viewport.Bounds.Width / 2) - ((cellSize * grd.Map.GetLength(0)) / 2), 
-                    (GraphicsDevice.Viewport.Bounds.Height / 2) - ((cellSize * grd.Map.GetLength(1)) / 2)),
-                        cellSize);
+            switchStates.Draw(spriteBatch);
+            spriteBatch.DrawString(gameLabel, printGameMode(), 
+                new Vector2((GraphicsDevice.Viewport.Bounds.Width / 2) , gC.Y - 30), Color.Black);
+            if(_gameState == GameState.InGame)
+            {
+                grd.drawMap(spriteBatch, gridPos(cellSize), cellSize);
+            }
+            else if(_gameState == GameState.Editor)
+            {
+                //editor drawing here
+            }
             //grd.drawMap(spriteBatch, new Vector2(300, 50), cellSize, cellSize);
 
             spriteBatch.End();
 
             base.Draw(gameTime);
+        }
+
+        public Vector2 gridPos(int cellSize)
+        {
+            return new Vector2((GraphicsDevice.Viewport.Bounds.Width / 2) - ((cellSize * grd.Map.GetLength(0)) / 2),
+                    (GraphicsDevice.Viewport.Bounds.Height / 2) - ((cellSize * grd.Map.GetLength(1)) / 2));
+        }
+
+        private void reverseGameState()
+        {
+            if(_gameState == GameState.Editor)
+            {
+                _gameState = GameState.InGame;
+            }
+            else
+            {
+                _gameState = GameState.Editor;
+            }
+        }
+
+        private string printGameMode()
+        {
+            if (_gameState == GameState.Editor)
+                return "Editing";
+            else
+                return "Playing";
         }
     }
 }
